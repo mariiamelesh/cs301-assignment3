@@ -10,3 +10,13 @@ begin
 		);
 end;
 $$ language plpgsql;
+
+create or replace procedure create_order(p_customer_id int)
+as $$
+begin
+    if not exists (select 1 from customers where customer_id = p_customer_id) then
+    raise exception 'customer doesnt exist';
+	end if;
+	insert into orders (customer_id) values (p_customer_id);
+end;
+$$ language plpgsql;
