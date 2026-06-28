@@ -2,8 +2,9 @@ create or replace function calculate_order_total(p_order_id int)
 returns numeric 
 as $$
 begin
-    return (
-		select coalesce(sum(quantity*price), 0)
+    return
+ (
+		select coalesce(sum(quantity*price), 0) 
 		from order_items
 		where order_id = p_order_id
 		group by order_id
@@ -28,7 +29,7 @@ create or replace procedure add_product_to_order(
     )
 as $$
 declare 
-	price int;
+	price_p numeric(10,2);
 begin
 	if p_quantity <= 0 then
 	raise exception 'cant add zero or negative number of products';
@@ -39,7 +40,7 @@ begin
 	end if;
 
 	select price 
-	into price
+	into price_p
 	from products 
 	where product_id = p_product_id;
 
@@ -48,7 +49,7 @@ begin
 	where product_id = p_product_id;
 
 	insert into order_items (order_id, product_id, quantity, price)
-    values (p_order_id, p_product_id, p_quantity, price);
+    values (p_order_id, p_product_id, p_quantity, price_p);
 end;
 $$ language plpgsql;
 
@@ -58,7 +59,7 @@ declare
     temp_order_id int;
     new_total int;
 begin
-    temp_order_id := coalesce(new.order_id, new.order_id);
+    temp_order_id := coalesce(new.order_id, old.order_id);
     new_total := calculate_order_total(temp_order_id);
 
     update orders
@@ -71,7 +72,7 @@ $$ language plpgsql;
 
 create trigger update_total
 after insert or update or delete 
-on orders
+on order_items
 for each row
 execute function update_total();
 
@@ -80,11 +81,7 @@ returns trigger
 as $$
 begin
     insert into order_log (order_id, customer_id, action)
-    values (
-        new.order_id, 
-        new.customer_id, 
-        'created order'
-    );
+    values (new.order_id, new.customer_id, 'created order');
     return new;
 end;
 $$ language plpgsql;
@@ -94,3 +91,15 @@ after insert
 on orders
 for each row
 execute function log_order_creation();
+
+
+call create_order(2);
+
+select * from orders;
+select * from order_log;
+call add_product_to_order(4, 1, 1);
+call add_product_to_order(4, 2, 2);
+select * from orders where order_id = 4;
+
+select * from products where product_id in (1, 2);
+call add_product_to_order(4, 4, 1000);
