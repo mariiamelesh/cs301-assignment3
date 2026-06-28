@@ -74,3 +74,23 @@ after insert or update or delete
 on orders
 for each row
 execute function update_total();
+
+create or replace function log_order_creation()
+returns trigger
+as $$
+begin
+    insert into order_log (order_id, customer_id, action)
+    values (
+        new.order_id, 
+        new.customer_id, 
+        'created order'
+    );
+    return new;
+end;
+$$ language plpgsql;
+
+create trigger order_log
+after insert
+on orders
+for each row
+execute function log_order_creation();
