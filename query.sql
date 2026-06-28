@@ -20,3 +20,57 @@ begin
 	insert into orders (customer_id) values (p_customer_id);
 end;
 $$ language plpgsql;
+
+create or replace procedure add_product_to_order(
+    p_order_id int,
+    p_product_id int,
+    p_quantity int
+    )
+as $$
+declare 
+	price int;
+begin
+	if p_quantity <= 0 then
+	raise exception 'cant add zero or negative number of products';
+	end if;
+
+	if (select stock_quantity from products where product_id = p_product_id) < p_quantity then
+	raise exception 'not enough product';
+	end if;
+
+	select price 
+	into price
+	from products 
+	where product_id = p_product_id;
+
+	update products
+	set stock_quantity = stock_quantity-p_quantity
+	where product_id = p_product_id;
+
+	insert into order_items (order_id, product_id, quantity, price)
+    values (p_order_id, p_product_id, p_quantity, price);
+end;
+$$ language plpgsql;
+
+create or replace function update_total()
+returns trigger as $$
+declare
+    temp_order_id int;
+    new_total int;
+begin
+    temp_order_id := coalesce(new.order_id, new.order_id);
+    new_total := calculate_order_total(temp_order_id);
+
+    update orders
+    set total_amount = new_total
+    where order_id = temp_order_id;
+
+   	return new;
+end;
+$$ language plpgsql;
+
+create trigger update_total
+after insert or update or delete 
+on orders
+for each row
+execute function update_total();
