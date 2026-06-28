@@ -1,0 +1,35 @@
+|QUERY PLAN                                                                                                                                   |
+|---------------------------------------------------------------------------------------------------------------------------------------------|
+|Sort  (cost=180.27..180.67 rows=160 width=246) (actual time=0.377..0.380 rows=3.00 loops=1)                                                  |
+|  Sort Key: (sum(oi.quantity)) DESC                                                                                                          |
+|  Sort Method: quicksort  Memory: 25kB                                                                                                       |
+|  Buffers: shared hit=9                                                                                                                      |
+|  ->  GroupAggregate  (cost=155.81..174.41 rows=160 width=246) (actual time=0.325..0.336 rows=3.00 loops=1)                                  |
+|        Group Key: c.customer_id                                                                                                             |
+|        Buffers: shared hit=6                                                                                                                |
+|        ->  Sort  (cost=155.81..159.21 rows=1360 width=234) (actual time=0.296..0.300 rows=13.00 loops=1)                                    |
+|              Sort Key: c.customer_id, o.order_id                                                                                            |
+|              Sort Method: quicksort  Memory: 25kB                                                                                           |
+|              Buffers: shared hit=6                                                                                                          |
+|              ->  Hash Join  (cost=54.20..85.03 rows=1360 width=234) (actual time=0.240..0.260 rows=13.00 loops=1)                           |
+|                    Hash Cond: (o.customer_id = c.customer_id)                                                                               |
+|                    Buffers: shared hit=3                                                                                                    |
+|                    ->  Hash Join  (cost=40.60..67.78 rows=1360 width=16) (actual time=0.071..0.083 rows=13.00 loops=1)                      |
+|                          Hash Cond: (oi.order_id = o.order_id)                                                                              |
+|                          Buffers: shared hit=2                                                                                              |
+|                          ->  Seq Scan on order_items oi  (cost=0.00..23.60 rows=1360 width=12) (actual time=0.021..0.023 rows=13.00 loops=1)|
+|                                Buffers: shared hit=1                                                                                        |
+|                          ->  Hash  (cost=23.60..23.60 rows=1360 width=8) (actual time=0.033..0.034 rows=8.00 loops=1)                       |
+|                                Buckets: 2048  Batches: 1  Memory Usage: 17kB                                                                |
+|                                Buffers: shared hit=1                                                                                        |
+|                                ->  Seq Scan on orders o  (cost=0.00..23.60 rows=1360 width=8) (actual time=0.018..0.020 rows=8.00 loops=1)  |
+|                                      Buffers: shared hit=1                                                                                  |
+|                    ->  Hash  (cost=11.60..11.60 rows=160 width=222) (actual time=0.056..0.056 rows=4.00 loops=1)                            |
+|                          Buckets: 1024  Batches: 1  Memory Usage: 9kB                                                                       |
+|                          Buffers: shared hit=1                                                                                              |
+|                          ->  Seq Scan on customers c  (cost=0.00..11.60 rows=160 width=222) (actual time=0.039..0.041 rows=4.00 loops=1)    |
+|                                Buffers: shared hit=1                                                                                        |
+|Planning:                                                                                                                                    |
+|  Buffers: shared hit=180                                                                                                                    |
+|Planning Time: 233.804 ms                                                                                                                    |
+|Execution Time: 0.547 ms                                                                                                                     |
